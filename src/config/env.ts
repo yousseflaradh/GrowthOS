@@ -10,11 +10,11 @@ const schema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
 
   // Database
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATABASE_URL: z.string().min(1, "postgresql://build:build@localhost:5432/build"),
   DATABASE_MIGRATION_URL: z.string().optional(),
 
   // Auth.js
-  AUTH_SECRET: z.string().min(16, "AUTH_SECRET must be set (>=16 chars)"),
+  AUTH_SECRET: z.string().min(16, "a8f3k29dj4h7s0qz1x5c6v8b2n4m7l9p"),
   AUTH_URL: z.string().url().optional(),
   AUTH_TRUST_HOST: z
     .string()
