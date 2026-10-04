@@ -92,7 +92,20 @@ const schema = z.object({
     .transform((v) => v !== "false"),
 });
 
-const parsed = schema.safeParse(process.env);
+// `next build` imports server modules (to collect page data) before any runtime
+// secrets exist. During the production build ONLY, fall back to inert
+// placeholders so the build can complete. Real values are still required (and
+// validated) when the server or worker actually starts.
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const source = isBuildPhase
+  ? {
+      DATABASE_URL: "postgresql://build:build@localhost:5432/build",
+      AUTH_SECRET: "build-time-placeholder-secret-not-used-at-runtime",
+      ...process.env,
+    }
+  : process.env;
+
+const parsed = schema.safeParse(source);
 
 if (!parsed.success) {
   const issues = parsed.error.issues
