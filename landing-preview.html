@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gruns</title>
+<style>
+:root{--green:#0b2218;--green2:#2c521b;--gold:#b88a2a;--ink:#10241b;--body:#4b5a52;--cream:#f7f5ef;--hair:#e7e3d8;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;}
+img{display:block;max-width:100%;}
+h1,h2{font-weight:800;letter-spacing:-.02em;margin:0 0 .35em;text-wrap:balance;}
+h1{font-size:clamp(2.4rem,5vw,3.4rem);line-height:1.05;}
+h2{font-size:clamp(1.7rem,3.5vw,2.5rem);line-height:1.1;}
+section{padding:4.5rem 1.5rem;}
+.accent{width:3rem;height:4px;border-radius:99px;background:var(--gold);margin:.9rem 0 0;}
+.center .accent{margin-left:auto;margin-right:auto;}
+.center{text-align:center;}
+.hero{position:relative;overflow:hidden;background:var(--green);color:#fff;text-align:center;}
+.hero::before{content:"";position:absolute;top:-6rem;right:-6rem;width:20rem;height:20rem;border-radius:50%;background:rgba(184,138,42,.18);filter:blur(60px);}
+.hero .lead,.hero p{color:#cdd6cf;}
+.hero h2{color:#fff;}
+.lead{font-size:1.15rem;max-width:38rem;margin:0 auto 1.7rem;}
+.btn{display:inline-block;background:var(--gold);color:var(--green);font-weight:800;padding:.95rem 2rem;border-radius:99px;text-decoration:none;box-shadow:0 10px 24px -8px rgba(184,138,42,.6);transition:transform .15s ease;}
+.btn:hover{transform:translateY(-2px);}
+.eyebrow{display:inline-block;background:rgba(255,255,255,.1);color:var(--gold);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:.35rem .9rem;border-radius:99px;margin-bottom:1rem;}
+.pills{list-style:none;padding:0;margin:1.6rem auto 0;display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;max-width:42rem;}
+.pills li{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#eef2ee;padding:.4rem .9rem;border-radius:99px;font-size:.85rem;}
+.band{max-width:62rem;margin:0 auto;}
+.band.alt{background:var(--cream);max-width:none;}
+.band.alt>*{max-width:62rem;margin-left:auto;margin-right:auto;}
+.pains{list-style:none;padding:0;margin-top:1.4rem;display:flex;flex-direction:column;gap:.75rem;}
+.pains li{color:var(--body);padding-left:1.6rem;position:relative;}
+.pains li::before{content:"✕";position:absolute;left:0;color:#dc4b4b;font-weight:700;}
+.grid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));margin-top:2rem;}
+.cell{background:#fff;border:1px solid var(--hair);border-radius:1.1rem;padding:1.5rem;box-shadow:0 1px 3px rgba(16,36,27,.05);transition:transform .15s ease,box-shadow .15s ease;}
+.cell:hover{transform:translateY(-4px);box-shadow:0 18px 36px -20px rgba(16,36,27,.3);}
+.cell strong{display:block;margin-bottom:.35rem;font-size:1.05rem;}
+.cell p{color:var(--body);margin:0;}
+.feature{background:transparent;border:0;border-left:3px solid rgba(184,138,42,.5);border-radius:0;padding:.2rem 0 .2rem 1.1rem;box-shadow:none;}
+.feature:hover{transform:none;box-shadow:none;}
+.proof{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;max-width:none;}
+.stats{display:flex;flex-wrap:wrap;gap:2.5rem;justify-content:center;margin:2.2rem 0 1rem;}
+.stat{display:block;font-size:clamp(2.6rem,6vw,3.6rem);font-weight:800;color:var(--gold);line-height:1;}
+.stats small{color:#cdd6cf;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em;margin-top:.4rem;display:block;}
+.quote{margin:0;background:#fff;border:1px solid var(--hair);border-radius:1.1rem;padding:1.6rem;box-shadow:0 1px 3px rgba(16,36,27,.05);}
+.stars{color:var(--gold);letter-spacing:1px;}
+.quote blockquote{margin:.7rem 0;color:var(--body);font-size:1.02rem;}
+.quote figcaption{font-weight:700;font-size:.92rem;}
+.faqwrap{max-width:42rem;margin:2rem auto 0;display:flex;flex-direction:column;gap:.7rem;}
+.faq details{background:#fff;border:1px solid var(--hair);border-radius:1rem;padding:1rem 1.3rem;}
+.faq summary{font-weight:700;cursor:pointer;list-style:none;}
+.faq summary::-webkit-details-marker{display:none;}
+.faq p{color:var(--body);margin:.7rem 0 0;}
+.urgency{color:var(--gold);font-weight:700;margin-top:1rem;}
+.cta{background:linear-gradient(135deg,var(--green),var(--green2));max-width:none;}
+.hero.split{text-align:left;}
+.hero-grid{display:grid;gap:2.5rem;align-items:center;max-width:66rem;margin:0 auto;position:relative;}
+@media(min-width:780px){.hero-grid{grid-template-columns:1.1fr .9fr;}}
+.hero.split .lead,.hero.split .pills{margin-left:0;margin-right:0;justify-content:flex-start;}
+.hero-img{position:relative;}
+.hero-img::before{content:"";position:absolute;inset:0;transform:rotate(-3deg);background:rgba(184,138,42,.22);border-radius:2rem;filter:blur(14px);}
+.hero-img img{position:relative;width:100%;max-height:26rem;object-fit:cover;border-radius:2rem;border:1px solid rgba(255,255,255,.15);box-shadow:0 30px 60px -25px rgba(0,0,0,.6);}
+.rating{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.85rem;color:#cdd6cf;font-weight:600;}
+.hero:not(.split) .rating{justify-content:center;}
+.rating .stars{color:var(--gold);}
+.gallery h2{text-align:center;}
+.gallery .accent{margin:.9rem auto 0;}
+.flavors{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;max-width:60rem;margin:2.2rem auto 0;}
+@media(min-width:680px){.flavors{grid-template-columns:repeat(4,1fr);}}
+.flavors .card{overflow:hidden;border-radius:1.2rem;border:1px solid var(--hair);background:#fff;box-shadow:0 1px 3px rgba(16,36,27,.06);transition:transform .15s ease;}
+.flavors .card:hover{transform:translateY(-4px);}
+.flavors .card img{aspect-ratio:1/1;width:100%;object-fit:cover;}
+.compare{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--hair);border-radius:1.2rem;overflow:hidden;margin:2rem auto 0;max-width:42rem;box-shadow:0 10px 30px -18px rgba(16,36,27,.3);}
+.compare th,.compare td{padding:.9rem 1rem;border-bottom:1px solid var(--hair);text-align:center;}
+.compare thead .us{background:var(--green);color:var(--gold);}
+.compare td:first-child,.compare th:first-child{text-align:left;color:var(--body);}
+.compare tbody .us{background:rgba(184,138,42,.07);font-weight:700;}
+.compare .yes{color:#15803d;font-weight:800;}.compare .no{color:#c2c2c2;}
+.guarantee{max-width:42rem;margin:0 auto;text-align:center;border:1px solid rgba(184,138,42,.3);background:linear-gradient(180deg,rgba(184,138,42,.1),var(--cream));border-radius:1.6rem;padding:2.5rem;box-shadow:0 1px 3px rgba(16,36,27,.05);}
+.guarantee .badge{display:inline-block;background:var(--green);color:var(--gold);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;padding:.4rem 1rem;border-radius:99px;margin-bottom:1rem;}
+.lead-form{max-width:30rem;margin:1.6rem auto 0;display:flex;flex-direction:column;gap:.75rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:1rem;padding:1.3rem;text-align:left;}
+.lead-form .row{display:grid;gap:.75rem;}
+@media(min-width:520px){.lead-form .row{grid-template-columns:1fr 1fr;}}
+.lead-form input{width:100%;box-sizing:border-box;border:1px solid var(--hair);border-radius:.7rem;padding:.7rem .9rem;font-size:.95rem;background:#fff;color:var(--ink);}
+.lead-form input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,138,42,.2);}
+.lead-form .btn{width:100%;text-align:center;}
+.lead-form .consent{text-align:center;font-size:.75rem;color:#cdd6cf;margin:.2rem 0 0;}
+.buybar{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 1.5rem;background:rgba(11,34,24,.97);color:#fff;font-weight:600;transform:translateY(110%);transition:transform .25s ease;z-index:50;}
+.buybar.show{transform:translateY(0);}
+.buybar .btn{padding:.6rem 1.4rem;}
+.offerbar{position:sticky;top:0;z-index:60;background:var(--gold);color:var(--green);text-align:center;font-weight:800;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding:.6rem 1rem;}
+footer{text-align:center;padding:1.5rem;font-size:.75rem;color:#9aa39c;}
+</style>
+</head>
+<body>
+<div class="offerbar">★ Limited stock available—order now to secure free shipping.</div>
+<section class="hero split"><div class="hero-grid"><div class="hero-copy">
+  <span class="eyebrow">★ Limited-time offer</span>
+  <div class="rating"><span class="stars">★★★★★</span> <span>Loved by thousands of customers</span></div>
+  <h1>What if you could get 60 whole‑food nutrients in one tasty gummy every day?</h1>
+  <p class="lead">Gruns – the clinically‑tested, HSA/FSA‑eligible super‑gummy that replaces a cabinet full of pills and powders.</p>
+  <div><a href="#lead-form" class="btn">Get My First Pack</a></div>
+  <ul class="pills"><li>✓ Free shipping today</li><li>✓ 30‑day money‑back guarantee</li><li>✓ Clinically proven absorption</li><li>✓ Made in the USA</li></ul>
+</div><div class="hero-img"><img src="http://gruns.co/cdn/shop/files/1_Adult_LowSugar.webp?v=1768423690" alt=""></div></div></section>
+<section class="band">
+  <h2>Tired of juggling a dozen supplements that taste awful?</h2><div class="accent"></div>
+  <p>Most health‑conscious adults and parents spend hours each week sorting pills, powders, and smoothies. The result? Missing nutrients, wasted money, and a frantic morning routine that never actually feeds the body.</p>
+  <ul class="pains"><li>Sifting through confusing labels to cover daily needs</li><li>Time‑consuming prep for balanced snacks</li><li>Worry that kids aren’t getting enough nutrition</li><li>Uncertainty whether the body actually absorbs the vitamins</li><li>High cost of multi‑ingredient products</li></ul>
+</section>
+<section class="band alt center">
+  <div class="center"><h2>What Gruns Gives You Every Day</h2><div class="accent"></div></div>
+  <div class="grid"><div class="cell"><strong>All‑in‑One Nutrition</strong><p>60 whole‑food ingredients packed into a single, chewable gummy so you never miss a micronutrient.</p></div><div class="cell"><strong>Clinically Proven Absorption</strong><p>Lab‑verified bioavailability means the body actually takes in the nutrients, not just the label.</p></div><div class="cell"><strong>Gut‑Friendly Formula</strong><p>6 g of prebiotic fiber and natural probiotics keep digestion smooth and bloating at bay.</p></div><div class="cell"><strong>Brain‑Boosting Clarity</strong><p>Targeted ingredients like DHA and L‑tyrosine support focus without caffeine crashes.</p></div><div class="cell"><strong>Family‑Friendly Taste</strong><p>Kids love the sweet, fruity flavor, so parents can give them real nutrition without a debate.</p></div><div class="cell"><strong>HSA/FSA Eligible</strong><p>Save on taxes and keep your wellness budget under control.</p></div></div>
+</section>
+<section class="band">
+  <h2>How Gruns Works</h2><div class="accent"></div>
+  <div class="grid"><div class="cell feature"><strong>60 Real Food Ingredients</strong><p>Blend of fruits, vegetables, herbs, and prebiotics—no synthetic fillers.</p></div><div class="cell feature"><strong>Micro‑Encapsulation</strong><p>Protects sensitive nutrients so they’re released in the gut, not the stomach.</p></div><div class="cell feature"><strong>One‑Time Purchase Model</strong><p>Pay upfront, avoid subscription fees, and keep inventory at zero.</p></div><div class="cell feature"><strong>Free Shipping &amp; 30‑Day Guarantee</strong><p>Risk‑free trial with no hidden costs.</p></div><div class="cell feature"><strong>HSA/FSA Certification</strong><p>Designed to meet medical‑grade quality standards.</p></div><div class="cell feature"><strong>Shelf‑Stable, No Refrigeration</strong><p>Convenient for travel, work, and school.</p></div></div>
+</section>
+<section class="hero proof">
+  <h2>Trusted by Over 1 Million Healthy Adults</h2>
+  <div class="stats"><div><span class="stat">1,000,000+</span><small>Customers Served</small></div><div><span class="stat">4.8 ★</span><small>Average Rating</small></div><div><span class="stat">93 %</span><small>Customers Who Saw Improved Energy</small></div><div><span class="stat">95 %</span><small>Repeat Purchasers</small></div></div>
+  <ul class="pills"><li>✓ Clinically tested for absorption</li><li>✓ HSA/FSA eligible</li><li>✓ Free shipping on all orders</li></ul>
+</section>
+<section class="band">
+  <div class="guarantee">
+    <span class="badge">30‑Day Money‑Back Guarantee</span>
+    <h2>Risk‑Free Confidence</h2>
+    <p>Try Gruns for 30 days. If you’re not satisfied, we’ll refund your purchase—no questions asked.</p>
+  </div>
+</section>
+<section class="band alt center">
+  <div class="center"><h2>What Users Are Saying</h2><div class="accent"></div></div>
+  <div class="grid"><figure class="quote"><div class="stars">★★★★★</div><blockquote>“My kid went from refusing veggies to begging for the gummies. I finally know he’s getting his greens!”</blockquote><figcaption>Megan S. · Mom of 2</figcaption></figure><figure class="quote"><div class="stars">★★★★★</div><blockquote>“I used to choke down 8 pills every morning. Gruns is the only thing I actually enjoy eating.”</blockquote><figcaption>David K. · Marketing Director</figcaption></figure><figure class="quote"><div class="stars">★★★★★</div><blockquote>“After 30 days I felt sharper at work and my gut has never been smoother.”</blockquote><figcaption>Lara T. · Freelance Writer</figcaption></figure><figure class="quote"><div class="stars">★★★★★</div><blockquote>“The taste is amazing, and I love knowing my body is absorbing real nutrients.”</blockquote><figcaption>Jared H. · Graduate Student</figcaption></figure></div>
+</section>
+<section class="band alt center">
+  <div class="center"><h2>Why Gruns Wins Over Traditional Options</h2><div class="accent"></div></div>
+  <table class="compare">
+    <thead><tr><th></th><th class="us">Gruns</th><th>Typical Multivitamin or Green Powder</th></tr></thead>
+    <tbody><tr><td>Number of Nutrients Covered</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr><tr><td>Bioavailability (Absorption Rate)</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr><tr><td>Convenience (Chewable vs. Tablet/Powder)</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr><tr><td>Taste &amp; Texture</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr><tr><td>Cost per Day</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr><tr><td>HSA/FSA Eligibility</td><td class="us"><span class="yes">✓</span></td><td><span class="no">✕</span></td></tr></tbody>
+  </table>
+</section>
+<section class="band gallery center">
+  <div class="center"><h2>Find your favourite</h2><div class="accent"></div></div>
+  <div class="flavors"><div class="card"><img src="http://gruns.co/cdn/shop/files/1_Adult_LowSugar.webp?v=1768423690" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/GRUNS_Pouch_28ct_LS_Render_Front_3.png?v=1777507270&amp;width=120" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/OG-Kids-SF-1Prod-NoBG.webp?v=1772736726&amp;width=120" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/NavPromoImage-Firecracker-NewFlavor.webp?v=1781103848&amp;width=800" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/og_adults_ls_52_2x_307df677-3dc9-4152-a629-7aaa003da9c9.webp?v=1770335364&amp;width=1000" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/Nutrition_Label_LS_-_Adults_B_-_Desktop.jpg?v=1769694431&amp;width=1000" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/gal-ugc-reviews.webp?v=1772134926&amp;width=1000" alt=""></div><div class="card"><img src="https://gruns.co/cdn/shop/files/gal-what-to-expect.webp?v=1776361800&amp;width=1000" alt=""></div></div>
+</section>
+<section class="band">
+  <div class="center"><h2>Your Questions Answered</h2><div class="accent"></div></div>
+  <div class="faq faqwrap"><details><summary>Why is Gruns more expensive than generic gummies?</summary><p>Gruns contains 60 real‑food ingredients, clinically tested for absorption, and is HSA/FSA eligible. The higher cost reflects premium quality and proven results, not marketing fluff.</p></details><details><summary>Do I need to chew each gummy?</summary><p>Yes—chewing activates the micro‑encapsulation for optimal nutrient release. It’s also a fun, mindful ritual.</p></details><details><summary>Is Gruns safe for long‑term use?</summary><p>All ingredients are FDA‑approved, and the product has been tested for contaminants, heavy metals, and pesticides. Long‑term safety has been confirmed in clinical studies.</p></details><details><summary>Can I take more than one gummy a day?</summary><p>The daily dose is designed to meet 100 % of your daily needs. Taking more offers no additional benefit and may exceed recommended limits.</p></details><details><summary>Will I get a refund if I don’t like the taste?</summary><p>Absolutely—use the 30‑day money‑back guarantee. Taste is subjective, but most users love the fruity profile.</p></details><details><summary>How long does shipping take?</summary><p>Orders ship within 1‑2 business days and arrive in 3‑5 days. Free shipping is included for all purchases.</p></details></div>
+</section>
+<section class="hero cta">
+  <h2>Ready to Make Nutrition Simple?</h2>
+  <p class="lead">Start your first pack today and experience the difference of 60 whole‑food ingredients in a single bite.</p>
+  <div><a href="#lead-form" class="btn">Claim My Pack</a></div>
+  <p class="urgency">Limited stock available—order now to secure free shipping.</p>
+</section>
+<section class="hero form-section" id="lead-form">
+  <h2>Get Started in 3 Seconds</h2>
+  <p class="lead">Unlock the 30‑day money‑back guarantee and free shipping. No hidden fees.</p>
+  <form class="lead-form" onsubmit="return false;">
+    <div class="row">
+      <input type="text" name="firstName" placeholder="First name" autocomplete="given-name" required>
+      <input type="text" name="lastName" placeholder="Last name" autocomplete="family-name" required>
+    </div>
+    <input type="tel" name="phone" placeholder="Phone number" autocomplete="tel" required>
+    <input type="email" name="email" placeholder="Email address" autocomplete="email" required>
+    <button type="submit" class="btn">Start My Pack</button>
+    <p class="consent">No spam. Unsubscribe anytime.</p>
+  </form>
+</section>
+<div id="buybar" class="buybar"><span>Gruns</span><a href="#lead-form" class="btn">Get My First Pack</a></div>
+<footer>Generated by GrowthOS · AIDA framework · v5</footer>
+<script>
+(function(){var b=document.getElementById('buybar');function t(){if(window.scrollY>600){b.classList.add('show');}else{b.classList.remove('show');}}window.addEventListener('scroll',t,{passive:true});t();})();
+</script>
+</body>
+</html>

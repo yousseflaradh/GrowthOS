@@ -1,0 +1,821 @@
+// GrowthOS — Prisma schema (Phase 1)
+// Conventions: cuid ids, organization_id on tenant-scoped tables (RLS-guarded),
+// snake_case table/column mapping for SQL ergonomics.
+// See docs/architecture/02-domain-and-data.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity (Auth.js v5 + profile). Global tables — not org-scoped.
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  passwordHash  String?   @map("password_hash") // null for OAuth-only users
+
+  // Profile fields (Phase 1)
+  company String?
+  website String?
+
+  accounts            Account[]
+  sessions            Session[]
+  memberships         Membership[]
+  passwordResetTokens PasswordResetToken[]
+  createdProjects     Project[]            @relation("ProjectCreatedBy")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash") // store a hash, never the raw token
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Tenancy
+// ─────────────────────────────────────────────────────────────
+
+enum OrganizationType {
+  PERSONAL
+  TEAM
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  slug      String           @unique
+  type      OrganizationType @default(PERSONAL)
+
+  memberships  Membership[]
+  projects     Project[]
+  activityLogs ActivityLog[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("organizations")
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  userId         String         @map("user_id")
+  role           MembershipRole @default(OWNER)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("memberships")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Projects (Phase 1 core feature) — org-scoped, RLS-guarded.
+// ─────────────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Project {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  createdByUserId String       @map("created_by_user_id")
+
+  productName String        @map("product_name")
+  productUrl  String?       @map("product_url")
+  description String?
+  image       String?
+  status      ProjectStatus @default(DRAFT)
+
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      User               @relation("ProjectCreatedBy", fields: [createdByUserId], references: [id])
+  snapshots      ProductSnapshot[]
+  analyses       ProductAnalysis[]
+  creativeBriefs CreativeBrief[]
+  strategies     CreativeStrategy[]
+  competitorAds  CompetitorAd[]
+  adComments     AdComment[]
+  intelReports   IntelReport[]
+  landingPages   LandingPage[]
+  audits         AuditRun[]
+  competitors    Competitor[]
+  documents      Document[]
+  agentRuns      AgentRun[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@map("projects")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 2 — Product Analysis Engine (org-scoped, RLS-guarded).
+// ─────────────────────────────────────────────────────────────
+
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// Immutable capture of a scraped (or manually provided) product page.
+model ProductSnapshot {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  projectId      String  @map("project_id")
+
+  source      String // "url" | "manual"
+  sourceUrl   String? @map("source_url")
+  title       String?
+  description String?
+  features    Json? // string[]
+  images      Json? // string[]
+  reviews     Json? // { author?, rating?, text }[]
+  contentHash String? @map("content_hash")
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analyses  ProductAnalysis[]
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  @@index([organizationId, projectId])
+  @@map("product_snapshots")
+}
+
+/// AI-generated customer intelligence for a product.
+model ProductAnalysis {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  projectId      String         @map("project_id")
+  snapshotId     String?        @map("snapshot_id")
+
+  status AnalysisStatus @default(PENDING)
+  result Json? // structured ProductAnalysisResult (see analysis-schema.ts)
+  model  String?
+  error  String?
+
+  project  Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  snapshot ProductSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId, createdAt])
+  @@map("product_analyses")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 3 — Creative Strategy Engine (org-scoped, RLS-guarded).
+// ─────────────────────────────────────────────────────────────
+
+enum CreativeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// Snapshot of the analysis inputs a strategy was generated from.
+model CreativeBrief {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  projectId      String  @map("project_id")
+  analysisId     String? @map("analysis_id")
+  inputs         Json? // { avatarSummary, painPoints, desires, objections, usp }
+
+  project    Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  strategies CreativeStrategy[]
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  @@index([organizationId, projectId])
+  @@map("creative_briefs")
+}
+
+/// A generated creative strategy run (aggregate root for angles/hooks/concepts).
+model CreativeStrategy {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  projectId      String         @map("project_id")
+  briefId        String         @map("brief_id")
+
+  status             CreativeStatus @default(PENDING)
+  model              String?
+  customerPsychology Json?          @map("customer_psychology")
+  staticConcepts     Json?          @map("static_concepts") // [{ title, description }]
+  videoConcepts      Json?          @map("video_concepts") // [{ title, description }]
+  error              String?
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  brief       CreativeBrief @relation(fields: [briefId], references: [id], onDelete: Cascade)
+  angles      Angle[]
+  hooks       Hook[]
+  ugcConcepts UGCConcept[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId, createdAt])
+  @@map("creative_strategies")
+}
+
+model Angle {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  strategyId     String  @map("strategy_id")
+  category       String
+  headline       String
+  description    String
+  position       Int     @default(0)
+  favorite       Boolean @default(false)
+
+  strategy CreativeStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, strategyId])
+  @@map("angles")
+}
+
+model Hook {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  strategyId     String  @map("strategy_id")
+  category       String
+  content        String
+  position       Int     @default(0)
+  favorite       Boolean @default(false)
+
+  strategy CreativeStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, strategyId])
+  @@map("hooks")
+}
+
+model UGCConcept {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  strategyId     String  @map("strategy_id")
+  title          String
+  concept        String
+  format         String?
+  hooks          Json?
+  position       Int     @default(0)
+  favorite       Boolean @default(false)
+
+  strategy CreativeStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, strategyId])
+  @@map("ugc_concepts")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 4 — Market & Comment Intelligence (org-scoped, RLS-guarded).
+// ─────────────────────────────────────────────────────────────
+
+enum AdSource {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  MANUAL
+  OTHER
+}
+
+enum IntelStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// A competitor / market ad gathered for a product (manual paste or scraped).
+model CompetitorAd {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  projectId      String   @map("project_id")
+  source         AdSource @default(MANUAL)
+  advertiser     String?
+  adText         String   @map("ad_text")
+  mediaUrl       String?  @map("media_url")
+  landingUrl     String?  @map("landing_url")
+  sourceUrl      String?  @map("source_url")
+
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments  AdComment[]
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@index([organizationId, projectId])
+  @@map("competitor_ads")
+}
+
+/// A customer comment (from an ad/post or pasted), optionally sentiment-tagged.
+model AdComment {
+  id             String   @id @default(cuid())
+  organizationId String   @map("organization_id")
+  projectId      String   @map("project_id")
+  adId           String?  @map("ad_id")
+  source         AdSource @default(MANUAL)
+  author         String?
+  text           String
+  sentiment      String? // "positive" | "negative" | "neutral"
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  ad        CompetitorAd? @relation(fields: [adId], references: [id], onDelete: SetNull)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([organizationId, projectId])
+  @@map("ad_comments")
+}
+
+/// AI synthesis of the gathered ads + comments for a product.
+model IntelReport {
+  id             String      @id @default(cuid())
+  organizationId String      @map("organization_id")
+  projectId      String      @map("project_id")
+  status         IntelStatus @default(PENDING)
+  model          String?
+  result         Json?
+  error          String?
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId, createdAt])
+  @@map("intel_reports")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 4 — Landing Page Generation Engine (org-scoped, RLS-guarded).
+// ─────────────────────────────────────────────────────────────
+
+enum PageFramework {
+  AIDA
+  PAS
+  BAB
+}
+
+enum SectionType {
+  HERO
+  GALLERY
+  PROBLEM
+  BENEFITS
+  FEATURES
+  COMPARISON
+  SOCIAL_PROOF
+  TESTIMONIALS
+  GUARANTEE
+  FAQ
+  CTA
+  FORM
+}
+
+/// One landing page per product/project; holds its version history.
+model LandingPage {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  projectId      String @map("project_id")
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  versions  PageVersion[]
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId])
+  @@map("landing_pages")
+}
+
+/// A generated version of a landing page (AI picks the framework).
+model PageVersion {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  landingPageId  String        @map("landing_page_id")
+
+  version   Int
+  framework PageFramework
+  rationale String?
+  theme     String?
+  design    String?
+  model     String?
+
+  landingPage LandingPage   @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  sections    PageSection[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@index([organizationId, landingPageId, version])
+  @@map("page_versions")
+}
+
+/// One structured JSON block of a page version.
+model PageSection {
+  id             String      @id @default(cuid())
+  organizationId String      @map("organization_id")
+  versionId      String      @map("version_id")
+
+  type     SectionType
+  position Int         @default(0)
+  content  Json
+
+  version PageVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, versionId])
+  @@map("page_sections")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Activity log (dashboard feed) — org-scoped, RLS-guarded, append-only.
+// ─────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id             String  @id @default(cuid())
+  organizationId String  @map("organization_id")
+  actorUserId    String? @map("actor_user_id")
+
+  action     String // e.g. "project.created", "project.updated"
+  entityType String? @map("entity_type")
+  entityId   String? @map("entity_id")
+  metadata   Json?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, createdAt])
+  @@map("activity_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 6 — Landing Page Audit Engine (CRO). Org-scoped, RLS-guarded.
+// ─────────────────────────────────────────────────────────────
+
+enum AuditStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AuditCategory {
+  HEADLINE
+  CTA
+  TRUST
+  MOBILE
+}
+
+enum AuditSeverity {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// One CRO audit of a landing-page URL.
+model AuditRun {
+  id             String      @id @default(cuid())
+  organizationId String      @map("organization_id")
+  projectId      String      @map("project_id")
+  url            String
+  status         AuditStatus @default(PROCESSING)
+  overallScore   Int?        @map("overall_score")
+  summary        String?
+  model          String?
+  error          String?
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scores          AuditScore[]
+  findings        AuditFinding[]
+  recommendations Recommendation[]
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId, createdAt])
+  @@map("audit_runs")
+}
+
+/// Per-category score (0–100) for an audit.
+model AuditScore {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  auditRunId     String        @map("audit_run_id")
+  category       AuditCategory
+  score          Int
+  summary        String?
+
+  auditRun AuditRun @relation(fields: [auditRunId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, auditRunId])
+  @@map("audit_scores")
+}
+
+/// An issue found during the audit.
+model AuditFinding {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  auditRunId     String        @map("audit_run_id")
+  category       AuditCategory
+  severity       AuditSeverity
+  title          String
+  detail         String
+  position       Int           @default(0)
+
+  auditRun AuditRun @relation(fields: [auditRunId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, auditRunId])
+  @@map("audit_findings")
+}
+
+/// A prioritized recommendation to fix a finding / lift conversion.
+model Recommendation {
+  id             String        @id @default(cuid())
+  organizationId String        @map("organization_id")
+  auditRunId     String        @map("audit_run_id")
+  category       AuditCategory
+  priority       AuditSeverity
+  title          String
+  detail         String
+  position       Int           @default(0)
+
+  auditRun AuditRun @relation(fields: [auditRunId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, auditRunId])
+  @@map("audit_recommendations")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 7 — Competitor Intelligence Engine. Org-scoped, RLS-guarded.
+// ─────────────────────────────────────────────────────────────
+
+/// A competitor tracked for a project (deduped by URL within the project).
+model Competitor {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  projectId      String @map("project_id")
+  name           String
+  url            String
+
+  project   Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  snapshots CompetitorSnapshot[]
+  analyses  CompetitorAnalysis[]
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  @@unique([projectId, url])
+  @@index([organizationId, projectId])
+  @@map("competitors")
+}
+
+/// Immutable capture of a scraped competitor page (teardown JSON).
+model CompetitorSnapshot {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  competitorId   String @map("competitor_id")
+
+  title    String?
+  content  Json // LandingTeardown: outline, headings, ctas, signals, offers
+  
+  competitor Competitor           @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  analyses   CompetitorAnalysis[]
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  @@index([organizationId, competitorId])
+  @@map("competitor_snapshots")
+}
+
+/// AI competitive analysis (offer / pricing / creative / positioning / SWOT).
+model CompetitorAnalysis {
+  id             String         @id @default(cuid())
+  organizationId String         @map("organization_id")
+  competitorId   String         @map("competitor_id")
+  snapshotId     String?        @map("snapshot_id")
+
+  status AnalysisStatus @default(PROCESSING)
+  result Json? // CompetitorAnalysisResult (see competitor-schema.ts)
+  model  String?
+  error  String?
+
+  competitor Competitor          @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  snapshot   CompetitorSnapshot? @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+
+  @@index([organizationId, competitorId, createdAt])
+  @@map("competitor_analyses")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 8 — Knowledge Base & RAG. Org-scoped, RLS-guarded.
+// Vectors live in Qdrant; these tables are the source-of-truth index that
+// maps ingested content → chunks → embedding provenance.
+// ─────────────────────────────────────────────────────────────
+
+enum KnowledgeSourceType {
+  PRODUCT
+  REVIEWS
+  COMPETITOR
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+/// An ingested knowledge source (a product, a batch of reviews, a competitor).
+/// Re-ingesting a source replaces its chunks (deduped by project+type+sourceId).
+model Document {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  projectId      String @map("project_id")
+
+  sourceType KnowledgeSourceType @map("source_type")
+  sourceId   String              @map("source_id") // originating row id (projectId, competitorId, …)
+  title      String
+  status     DocumentStatus      @default(PENDING)
+  chunkCount Int                 @default(0) @map("chunk_count")
+  model      String?
+  error      String?
+  metadata   Json?
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chunks    Chunk[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, sourceType, sourceId])
+  @@index([organizationId, projectId])
+  @@map("documents")
+}
+
+/// A retrievable text span of a Document. `vectorId` is its Qdrant point id.
+model Chunk {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  documentId     String @map("document_id")
+
+  index      Int
+  content    String
+  tokenCount Int?    @map("token_count")
+  vectorId   String  @unique @map("vector_id") // UUID — Qdrant point id
+
+  document  Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  embedding EmbeddingMetadata?
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@index([organizationId, documentId])
+  @@map("chunks")
+}
+
+/// Provenance of a chunk's embedding (which provider/model/dimension produced it).
+model EmbeddingMetadata {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  chunkId        String @unique @map("chunk_id")
+
+  provider   String
+  model      String
+  dimensions Int
+
+  chunk     Chunk    @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId])
+  @@map("embedding_metadata")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Phase 9 — AI Agent Orchestration (LangGraph). Org-scoped, RLS-guarded.
+// A run is one execution of an agent graph; steps are individual agent nodes
+// with their own token usage / cost / retry accounting.
+// ─────────────────────────────────────────────────────────────
+
+enum AgentRunStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+/// One execution of an agent workflow (graph) for a project.
+model AgentRun {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  projectId      String @map("project_id")
+
+  workflow          String         @default("campaign")
+  status            AgentRunStatus @default(PROCESSING)
+  input             Json?
+  result            Json?
+  totalInputTokens  Int            @default(0) @map("total_input_tokens")
+  totalOutputTokens Int            @default(0) @map("total_output_tokens")
+  totalCostUsd      Float          @default(0) @map("total_cost_usd")
+  error             String?
+
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  steps     AgentStep[]
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@index([organizationId, projectId, createdAt])
+  @@map("agent_runs")
+}
+
+/// One agent node's execution within a run — with its own cost/retry record.
+model AgentStep {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  runId          String @map("run_id")
+
+  agent        String
+  position     Int            @default(0)
+  status       AgentRunStatus @default(PENDING)
+  attempts     Int            @default(0)
+  model        String?
+  inputTokens  Int            @default(0) @map("input_tokens")
+  outputTokens Int            @default(0) @map("output_tokens")
+  costUsd      Float          @default(0) @map("cost_usd")
+  output       Json?
+  error        String?
+  startedAt    DateTime?      @map("started_at")
+  finishedAt   DateTime?      @map("finished_at")
+
+  run       AgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, runId])
+  @@map("agent_steps")
+}
