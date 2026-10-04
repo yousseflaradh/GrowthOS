@@ -96,7 +96,9 @@ const schema = z.object({
 // secrets exist. During the production build ONLY, fall back to inert
 // placeholders so the build can complete. Real values are still required (and
 // validated) when the server or worker actually starts.
-const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+const isBuildPhase =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.npm_lifecycle_event === "build";
 const source = isBuildPhase
   ? {
       DATABASE_URL: "postgresql://build:build@localhost:5432/build",
